@@ -135,13 +135,26 @@
     <script src="config.js"></script>
 
     <script>
-        const signupForm = document.getElementById("signup-form");
-        const signupButton = document.getElementById("signup-button");
-        const signupMessage = document.getElementById("signup-message");
+        // Added directly here to prevent "not defined" errors
+        function normalizePhone(input) {
+            let digits = String(input || "").replace(/\D/g, "");
+            if (digits.startsWith("00")) digits = digits.slice(2);
+            if (digits.startsWith("20") && digits.length === 12) digits = digits.slice(2);
+            if (digits.startsWith("0") && digits.length === 11) digits = digits.slice(1);
+            return digits;
+        }
+
+        function isValidPhone(phone) {
+            return /^[0-9]{10}$/.test(phone);
+        }
 
         function isValidEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
+
+        const signupForm = document.getElementById("signup-form");
+        const signupButton = document.getElementById("signup-button");
+        const signupMessage = document.getElementById("signup-message");
 
         function showMessage(message, isError = false) {
             signupMessage.textContent = message;
@@ -174,7 +187,7 @@
                 }
 
                 if (!isValidPhone(phone)) {
-                    throw new Error("Please enter a valid Egyptian phone number.");
+                    throw new Error("Please enter a valid Egyptian phone number (10 digits after 0).");
                 }
 
                 if (!isValidEmail(email)) {
