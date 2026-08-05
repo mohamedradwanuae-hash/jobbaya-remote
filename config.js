@@ -22,9 +22,11 @@ function safeUrl(url) {
 
     try {
         const parsed = new URL(String(url));
+
         if (parsed.protocol === "http:" || parsed.protocol === "https:") {
             return String(url);
         }
+
         return null;
     } catch {
         return null;
@@ -44,6 +46,94 @@ function formatDate(value) {
         year: "numeric"
     });
 }
+
+function normalizePhone(input) {
+    let digits = String(input || "").replace(/\D/g, "");
+
+    if (digits.startsWith("00")) {
+        digits = digits.slice(2);
+    }
+
+    if (digits.startsWith("20") && digits.length === 12) {
+        digits = digits.slice(2);
+    }
+
+    if (digits.startsWith("0") && digits.length === 11) {
+        digits = digits.slice(1);
+    }
+
+    return digits;
+}
+
+function isValidPhone(phone) {
+    return /^[0-9]{10}$/.test(phone);
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function getCurrentSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+}
+
+async function getCurrentProfile() {
+    const session = await getCurrentSession();
+
+    if (!session || !session.user) {
+        return null;
+    }
+
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Profile fetch error:", error);
+        return null;
+    }
+
+    return data;
+}
+
+async function logout() {
+    await supabase.auth.signOut();
+    window.location.href = "index.html";
+}
+
+window.logout = logout;
+
+async function renderAuthLinks(containerId) {
+    const container = document.getElementById(containerId);
+
+    if (!container) return;
+
+    const profile = await getCurrentProfile();
+
+    if (profile) {
+        const adminLink = profile.role === "admin"
+            ? `<a href="upload.html" class="hover:text-emerald-600">Upload</a>`
+            : "";
+
+        container.innerHTML = `
+            <span class="text-gray-500">${escapeHtml(profile.name || "User")}</span>
+            ${adminLink}
+            <button onclick="logout()" class="text-red-500 hover:text-red-700">
+                Logout
+            </button>
+        `;
+    } else {
+        container.innerHTML = `
+            <a href="login.html" class="hover:text-emerald-600">Login</a>
+            <a href="signup.html" class="hover:text-emerald-600">Sign up</a>
+        `;
+    }
+}
+
+window.renderAuthLinks = renderAuthLinks;
 
 function jobCard(job) {
     const imageUrl = safeUrl(job.image_url);
