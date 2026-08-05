@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobbaya Remote | Remote Jobs from Home in Egypt</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-emerald-600">
+                🏠 Jobbaya Remote
+            </a>
+
+            <div class="space-x-4 text-sm">
+                <a href="index.html" class="hover:text-emerald-600">Jobs</a>
+                <a href="upload.html" class="hover:text-emerald-600">Upload Job</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold mb-3">
+                Remote Jobs from Home 🇪🇬
+            </h1>
+
+            <p class="text-gray-500 text-lg">
+                High-paying remote opportunities for Egyptians
+            </p>
+        </div>
+
+        <div class="w-full h-24 bg-gray-100 rounded-lg mb-8 flex items-center justify-center text-gray-400 text-sm border dashed">
+            Google AdSense Top Banner Placeholder
+        </div>
+
+        <div id="jobs-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <p class="text-center text-gray-400 col-span-full py-10">
+                Loading jobs...
+            </p>
+        </div>
+
+    </main>
+
+    <footer class="border-t bg-white mt-auto">
+        <div class="max-w-6xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+            <p>&copy; 2026 Jobbaya Remote. All rights reserved.</p>
+            <p class="mt-1">Remote jobs from home in Egypt 🇪🇬</p>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+
+    <script>
+        async function loadJobs() {
+            const container = document.getElementById("jobs-container");
+
+            const { data, error } = await supabase
+                .from("jobs")
+                .select("*")
+                .order("created_at", { ascending: true });
+
+            if (error) {
+                console.error(error);
+                container.innerHTML = `
+                    <p class="text-center text-red-500 col-span-full py-10">
+                        Error loading jobs. Check Supabase settings.
+                    </p>
+                `;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <p class="text-center text-gray-400 col-span-full py-10">
+                        No jobs posted yet. Check back soon!
+                    </p>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(jobCard).join("");
+        }
+
+        loadJobs();
+    </script>
+
+</body>
+</html>

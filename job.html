@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Details | Jobbaya Remote</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-emerald-600">
+                🏠 Jobbaya Remote
+            </a>
+
+            <div class="space-x-4 text-sm">
+                <a href="index.html" class="hover:text-emerald-600">Jobs</a>
+                <a href="upload.html" class="hover:text-emerald-600">Upload Job</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+
+        <a href="index.html" class="text-sm text-emerald-600 hover:underline mb-6 inline-block">
+            ← Back to jobs
+        </a>
+
+        <div class="grid gap-8 lg:grid-cols-3">
+
+            <div class="lg:col-span-2">
+                <div id="job-content" class="bg-white rounded-xl p-8 shadow-sm border">
+                    <p class="text-center text-gray-400">
+                        Loading job details...
+                    </p>
+                </div>
+
+                <div class="w-full h-32 bg-gray-100 rounded-lg mt-8 flex items-center justify-center text-gray-400 text-sm border dashed">
+                    Google AdSense In-Article Placeholder
+                </div>
+            </div>
+
+            <div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border">
+                    <h2 class="text-xl font-bold mb-4">
+                        Related Jobs
+                    </h2>
+
+                    <div id="related-jobs" class="space-y-4">
+                        <p class="text-gray-400 text-sm">
+                            Loading related jobs...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="border-t bg-white mt-auto">
+        <div class="max-w-6xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+            <p>&copy; 2026 Jobbaya Remote. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const jobId = params.get("id");
+
+        async function loadJob() {
+            const container = document.getElementById("job-content");
+
+            if (!jobId) {
+                container.innerHTML = `
+                    <p class="text-center text-red-500">
+                        Invalid job link.
+                    </p>
+                `;
+                return;
+            }
+
+            const { data: job, error } = await supabase
+                .from("jobs")
+                .select("*")
+                .eq("id", jobId)
+                .single();
+
+            if (error || !job) {
+                console.error(error);
+                container.innerHTML = `
+                    <p class="text-center text-red-500">
+                        Job not found.
+                    </p>
+                `;
+                return;
+            }
+
+            document.title = `${job.title} | Jobbaya Remote`;
+
+            const imageUrl = safeUrl(job.image_url);
+            const applyUrl = safeUrl(job.apply_link);
+
+            const imageHtml = imageUrl
+                ? `
+                    <img
+                        src="${escapeHtml(imageUrl)}"
+                        alt="${escapeHtml(job.title)}"
+                        class="w-full h-72 object-cover rounded-xl border bg-gray-50 mb-6"
+                    >
+                `
+                : `
+                    <div class="w-full h-72 rounded-xl bg-emerald-100 flex items-center justify-center text-6xl mb-6">
+                        💼
+                    </div>
+                `;
+
+            const salaryHtml = job.salary_range
+                ? `
+                    <span class="inline-block mt-3 bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-sm font-semibold">
+                        ${escapeHtml(job.salary_range)}
+                    </span>
+                `
+                : "";
+
+            const applyButtonHtml = applyUrl
+                ? `
+                    <a
+                        href="${escapeHtml(applyUrl)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-10 rounded-xl text-lg transition-all shadow-lg"
+                    >
+                        Apply Now →
+                    </a>
+                `
+                : `
+                    <button
+                        disabled
+                        class="inline-block bg-gray-300 text-gray-500 font-bold py-4 px-10 rounded-xl text-lg cursor-not-allowed"
+                    >
+                        Apply link unavailable
+                    </button>
+                `;
+
+            container.innerHTML = `
+                ${imageHtml}
+
+                <h1 class="text-3xl font-bold">
+                    ${escapeHtml(job.title)}
+                </h1>
+
+                <p class="text-gray-500 text-sm mt-2">
+                    Posted ${formatDate(job.created_at)}
+                </p>
+
+                ${salaryHtml}
+
+                <div class="mt-8 text-gray-700 leading-relaxed whitespace-pre-line">
+                    ${escapeHtml(job.description)}
+                </div>
+
+                <div class="mt-10 pt-6 border-t text-center">
+                    ${applyButtonHtml}
+
+                    <p class="text-xs text-gray-400 mt-3">
+                        You will be redirected to the employer's application page.
+                    </p>
+                </div>
+            `;
+
+            loadRelatedJobs(job);
+        }
+
+        async function loadRelatedJobs(currentJob) {
+            const relatedContainer = document.getElementById("related-jobs");
+
+            const { data, error } = await supabase
+                .from("jobs")
+                .select("*")
+                .order("created_at", { ascending: false })
+                .limit(24);
+
+            if (error) {
+                console.error(error);
+                relatedContainer.innerHTML = `
+                    <p class="text-red-500 text-sm">
+                        Error loading related jobs.
+                    </p>
+                `;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                relatedContainer.innerHTML = `
+                    <p class="text-gray-400 text-sm">
+                        No related jobs yet.
+                    </p>
+                `;
+                return;
+            }
+
+            const related = data
+                .filter(job => job.id !== currentJob.id)
+                .sort((a, b) => {
+                    const aSameCompany = currentJob.company && a.company === currentJob.company ? 1 : 0;
+                    const bSameCompany = currentJob.company && b.company === currentJob.company ? 1 : 0;
+
+                    if (bSameCompany !== aSameCompany) {
+                        return bSameCompany - aSameCompany;
+                    }
+
+                    return new Date(b.created_at) - new Date(a.created_at);
+                })
+                .slice(0, 3);
+
+            if (related.length === 0) {
+                relatedContainer.innerHTML = `
+                    <p class="text-gray-400 text-sm">
+                        No related jobs yet.
+                    </p>
+                `;
+                return;
+            }
+
+            relatedContainer.innerHTML = related.map(job => {
+                const imageUrl = safeUrl(job.image_url);
+
+                const imageHtml = imageUrl
+                    ? `
+                        <img
+                            src="${escapeHtml(imageUrl)}"
+                            alt="${escapeHtml(job.title)}"
+                            class="w-16 h-16 rounded-lg object-cover border bg-gray-50"
+                        >
+                    `
+                    : `
+                        <div class="w-16 h-16 rounded-lg bg-emerald-100 flex items-center justify-center text-2xl">
+                            💼
+                        </div>
+                    `;
+
+                return `
+                    <a
+                        href="job.html?id=${encodeURIComponent(job.id)}"
+                        class="flex items-start gap-4 p-3 rounded-lg border hover:border-emerald-300 transition-all bg-white"
+                    >
+                        ${imageHtml}
+
+                        <div>
+                            <h3 class="font-semibold leading-snug">
+                                ${escapeHtml(job.title)}
+                            </h3>
+
+                            <p class="text-gray-500 text-sm mt-1">
+                                Posted ${formatDate(job.created_at)}
+                            </p>
+
+                            ${
+                                job.salary_range
+                                    ? `
+                                        <p class="text-emerald-600 text-sm font-semibold mt-1">
+                                            ${escapeHtml(job.salary_range)}
+                                        </p>
+                                    `
+                                    : ""
+                            }
+                        </div>
+                    </a>
+                `;
+            }).join("");
+        }
+
+        loadJob();
+    </script>
+
+</body>
+</html>
