@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Jobbaya Remote</title>
+    <title>Jobbaya Remote | Remote Jobs from Home in Egypt</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -25,136 +25,86 @@
                 🏠 Jobbaya Remote
             </a>
 
-            <div class="space-x-4 text-sm">
-                <a href="index.html" class="hover:text-emerald-600">Jobs</a>
-                <a href="signup.html" class="hover:text-emerald-600">Sign up</a>
+            <!-- Dynamic links (Jobs, Login, Sign up) will load here -->
+            <div id="auth-links" class="space-x-4 text-sm flex items-center">
             </div>
         </div>
     </nav>
 
-    <main class="flex-1 flex items-center justify-center px-4 py-12">
+    <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
 
-        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border">
-            <h1 class="text-3xl font-bold mb-6 text-center">
-                🔐 Login
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold mb-3">
+                Remote Jobs from Home 🇪🇬
             </h1>
 
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold mb-1">
-                        Email Address
-                    </label>
+            <p class="text-gray-500 text-lg">
+                High-paying remote opportunities for Egyptians.
+                <span class="block text-sm text-emerald-600 font-semibold mt-2">
+                    Browse all jobs below. No login required to view opportunities!
+                </span>
+            </p>
+        </div>
 
-                    <input
-                        type="email"
-                        id="email"
-                        placeholder="you@example.com"
-                        required
-                        class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                </div>
+        <div class="w-full h-24 bg-gray-100 rounded-lg mb-8 flex items-center justify-center text-gray-400 text-sm border dashed">
+            Google AdSense Top Banner Placeholder
+        </div>
 
-                <div>
-                    <label class="block text-sm font-semibold mb-1">
-                        Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="password"
-                        placeholder="Your password"
-                        required
-                        class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                </div>
-
-                <button
-                    type="submit"
-                    id="login-button"
-                    class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition"
-                >
-                    Login
-                </button>
-
-                <p id="login-message" class="text-sm text-center hidden"></p>
-            </form>
-
-            <p class="text-sm text-gray-500 text-center mt-6">
-                Don't have an account?
-
-                <a href="signup.html" class="text-emerald-600 font-semibold hover:underline">
-                    Sign up
-                </a>
+        <div id="jobs-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <p class="text-center text-gray-400 col-span-full py-10">
+                Loading jobs...
             </p>
         </div>
 
     </main>
 
+    <footer class="border-t bg-white mt-auto">
+        <div class="max-w-6xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+            <p>&copy; 2026 Jobbaya Remote. All rights reserved.</p>
+            <p class="mt-1">Remote jobs from home in Egypt 🇪🇬</p>
+        </div>
+    </footer>
+
     <script src="config.js"></script>
 
     <script>
-        const loginForm = document.getElementById("login-form");
-        const loginButton = document.getElementById("login-button");
-        const loginMessage = document.getElementById("login-message");
+        // 1. Load the navbar links (Shows "Login/Sign up" for guests, "Logout" for users)
+        renderAuthLinks("auth-links");
 
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
+        // 2. Load the jobs
+        async function loadJobs() {
+            const container = document.getElementById("jobs-container");
 
-        function showMessage(message, isError = false) {
-            loginMessage.textContent = message;
-            loginMessage.classList.remove("hidden");
+            // FIX: Changed ascending to false so NEWEST jobs appear first
+            const { data, error } = await supabase
+                .from("jobs")
+                .select("*")
+                .order("created_at", { ascending: false }); 
 
-            if (isError) {
-                loginMessage.className = "text-sm text-center text-red-500";
-            } else {
-                loginMessage.className = "text-sm text-center text-green-600";
-            }
-        }
-
-        loginForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
-
-            loginButton.disabled = true;
-            loginButton.textContent = "Logging in...";
-
-            try {
-                const email = document.getElementById("email").value.trim().toLowerCase();
-                const password = document.getElementById("password").value;
-
-                if (!isValidEmail(email)) {
-                    throw new Error("Please enter a valid email address.");
-                }
-
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) {
-                    if (error.message.toLowerCase().includes("email not confirmed")) {
-                        throw new Error("Please confirm your email address before logging in.");
-                    }
-
-                    throw new Error("Invalid email or password.");
-                }
-
-                const profile = await getCurrentProfile();
-
-                if (profile && profile.role === "admin") {
-                    window.location.href = "upload.html";
-                } else {
-                    window.location.href = "index.html";
-                }
-
-            } catch (error) {
+            if (error) {
                 console.error(error);
-                showMessage(error.message || "Login failed.", true);
-            } finally {
-                loginButton.disabled = false;
-                loginButton.textContent = "Login";
+                container.innerHTML = `
+                    <p class="text-center text-red-500 col-span-full py-10">
+                        Error loading jobs. Check Supabase settings.
+                    </p>
+                `;
+                return;
             }
-        });
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <p class="text-center text-gray-400 col-span-full py-10">
+                        No jobs posted yet. Check back soon!
+                    </p>
+                `;
+                return;
+            }
+
+            // Render the job cards
+            container.innerHTML = data.map(jobCard).join("");
+        }
+
+        loadJobs();
     </script>
 
 </body>
